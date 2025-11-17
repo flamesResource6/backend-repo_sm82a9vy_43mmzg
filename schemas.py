@@ -1,48 +1,47 @@
 """
-Database Schemas
+Database Schemas for MacBook Affiliate Blog
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a collection in MongoDB. The collection name is the lowercase of the class name.
+- Retailer -> "retailer"
+- Macbook -> "macbook"
+- Offer -> "offer"
+- Post -> "post"
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, HttpUrl
+from typing import Optional, Literal
+from datetime import datetime
 
-# Example schemas (replace with your own):
+CountryCode = Literal["NL", "BE"]
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Retailer(BaseModel):
+    name: str = Field(..., description="Retailer display name")
+    country: CountryCode = Field(..., description="Country code for market focus")
+    logo_url: Optional[HttpUrl] = Field(None, description="Public logo URL")
+    site_url: HttpUrl = Field(..., description="Homepage URL")
+    affiliate_url: Optional[HttpUrl] = Field(None, description="Affiliate deep link or placeholder")
+    rating: Optional[float] = Field(None, ge=0, le=5, description="Average rating out of 5")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+class Macbook(BaseModel):
+    model: str = Field(..., description="Model identifier e.g., MacBook Air 13 M2")
+    chip: str = Field(..., description="Chip designation e.g., M1, M2, M3")
+    size_inches: float = Field(..., description="Screen size in inches")
+    base_storage_gb: int = Field(..., ge=128, description="Base storage capacity")
+    year: int = Field(..., ge=2015, description="Release year")
 
-# Add your own schemas here:
-# --------------------------------------------------
+class Offer(BaseModel):
+    macbook_model: str = Field(..., description="Reference to Macbook.model")
+    retailer_name: str = Field(..., description="Reference to Retailer.name")
+    country: CountryCode = Field(..., description="Country for which the price applies")
+    price_eur: float = Field(..., ge=0, description="Price in EUR")
+    product_url: HttpUrl = Field(..., description="Product page (affiliate if possible)")
+    in_stock: bool = Field(True, description="Availability")
+    last_checked: Optional[datetime] = Field(None, description="Timestamp when price was last verified")
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Post(BaseModel):
+    title: str
+    slug: str
+    excerpt: Optional[str] = None
+    content_md: str = Field(..., description="Markdown content")
+    country: Optional[CountryCode] = None
+    cover_image: Optional[HttpUrl] = None
